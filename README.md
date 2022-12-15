@@ -1,9 +1,9 @@
 # gh-actions-workflow-runs-sorter
 
 ## What is this?
-This is a basic command-line tool aiming to help organize Github Actions' workflow runs in their coronological order.
+This is a basic command-line tool aiming to help organize Github Actions' workflow runs in their chronological order.
 
-The tool's main purpose is to help serialize arifact release where Github Actions' runs of the same workflow can run into race-conditions (e.g. two commits pushed in a short timeframe, where the newer commit can finish it's workflow run before the previously pushed commit).
+The tool's main purpose is to help serialize artifact release where Github Actions' runs of the same workflow can run into race-conditions (e.g. two commits pushed in a short timeframe, where the newer commit can finish its workflow run before the previously pushed commit).
 
 Using the tool can help organize releasing artifacts (e.g. Docker images, Helm Charts etc.) in their correct order.
 
@@ -15,7 +15,7 @@ The tool makes use of the `GITHUB_RUN_NUMBER` or `github.run_number` for alignin
 
 There are two modes this tool can run with:
 1. `shouldExecute` - check if this workflow run should execute (or run) in the first place. If `SHOULD_RUN_EXECUTE` is returned as `true`, the command will also return `SHOULD_WAIT_FOR_PAST_RUN` (either - true/false) and `PAST_RUN_ID` (the workflow run ID with a run_number lower than currently running workflow run).
-2. `shouldComplete` - this mode can check if a workflow run with `PAST_RUN_ID` is still running or is `completed`. If the former it will wait based on user-provided wait-time. If the run with `PAST_RUN_ID` is `completed` it will check if the completion time exceeds user-provided pos-completion wait time and complete the running workflow if it exceeds. If there's a lag required per user-requirement then it will sleep until that time has surparsed post-completion wait.
+2. `shouldComplete` - this mode can check if a workflow run with `PAST_RUN_ID` is still running or is `completed`. If the former it will wait based on user-provided wait-time. If the run with `PAST_RUN_ID` is `completed` it will check if the completion time exceeds user-provided pos-completion wait time and complete the running workflow if it exceeds. If there's a lag required per user-requirement then it will sleep until that time has surpassed post-completion wait.
 
 ### 1. `shouldExecute` Mode
 
@@ -54,7 +54,7 @@ gh-actions-workflow-runs-sorter \
 | `--wait_before_complete` | used in `shouldComplete` mode - how long to wait post-completion of workflow run with `previousRunId` | `300s` |
 
 ## Explanation:
-Running this cli using the `shouldExecute` mode will return three variables `SHOULD_RUN_EXECUTE`, `SHOULD_WAIT_FOR_PAST_RUN`, and `PAST_RUN_ID`. All three variables are exportable using the cli ouput - note the command execution below. 
+Running this cli using the `shouldExecute` mode will return three variables `SHOULD_RUN_EXECUTE`, `SHOULD_WAIT_FOR_PAST_RUN`, and `PAST_RUN_ID`. All three variables are exportable using the cli output - note the command execution below. 
 
 `$(gh-actions-workflow-runs-sorter --mode=shouldExecute --run_number=${{ github.run_number }} --branch=<git-branch> --owner=<git-repo-owner> --repo=<git-repo> --workflowFile=<workflow-file-name>)`)
 
@@ -67,7 +67,7 @@ Running this cli using the `shouldExecute` mode will return three variables `SHO
 ### `SHOULD_RUN_EXECUTE`:
 The `SHOULD_RUN_EXECUTE` variable is calculated by looking over x number of previous runs from a workflow (x is provided by `--workflow_run_to_return` defaulting to 20). 
 
-If a run with a HIGHER `github.run_number` than what was set in `--run_number` and is found to have `completed`, then this variables is set to `false` - since a new commit has already ran and completed - this run has lost it's order and should not be executed. 
+If a run with a HIGHER `github.run_number` than what was set in `--run_number` and is found to have `completed`, then this variable is set to `false` - since a new commit has already ran and completed - this run has lost its order and should not be executed. 
 
 Setting this to false will gate against manually re-running a previously failed (or succeeded) workflow runs. 
 
@@ -82,7 +82,7 @@ If the first run with a `github.run_number` LOWER than what is set in `--run_num
 ### `PAST_RUN_ID`:
 The `PAST_RUN_ID` variable is calculated by looking over x number of previous runs from a workflow (x is provided by `--workflow_run_to_return` defaulting to 20). 
 
-This will probide the `github.run_id` of the first run found with a `github.run_number` LOWER than what is set in `--run_number`.
+This will provide the `github.run_id` of the first run found with a `github.run_number` LOWER than what is set in `--run_number`.
 
 ### How is wait time calculated in `shouldComplete` mode:
 Based on what is provided in `--prev_run_number`, `--waitBetweenChecks` and `--waitBeforeComplete` the following logic will take place:
