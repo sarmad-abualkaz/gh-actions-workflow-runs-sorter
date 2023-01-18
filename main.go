@@ -23,7 +23,7 @@ func main(){
 	workflowFile         := flag.String("workflowFile", "cron_and_dispatch.yml", "workflow to link users to")
 	workflowRunsToReturn := flag.Int("workflow_run_to_return", 20, "number of workflow runs to return")
 	waitBetweenChecks    := flag.Int("wait_between_checks", 10, "how long, in seconds, to wait between checks on previous workflow run")
-    waitBeforeComplete   := flag.Float64("wait_before_complete", 300, "how long, in seconds, to wait after a completed previous workflow run")
+        waitBeforeComplete   := flag.Float64("wait_before_complete", 60, "how long, in seconds, to wait after a completed previous workflow run")
 
     flag.Parse()
 
