@@ -51,7 +51,7 @@ gh-actions-workflow-runs-sorter \
 | `--workflowFile` | the workflow file name running triggering the workflow | | 
 | `--workflow_run_to_return` | how many workflow runs do you want to visit per check | `20` |
 | `--wait_between_checks` | used in `shouldComplete` mode when `SHOULD_WAIT_FOR_PAST_RUN` is true - how long to wait before checking the status of workflow run with `previousRunId` again | `10s` |
-| `--wait_before_complete` | used in `shouldComplete` mode - how long to wait post-completion of workflow run with `previousRunId` | `300s` |
+| `--wait_before_complete` | used in `shouldComplete` mode - how long to wait post-completion of workflow run with `previousRunId` | `60s` |
 
 ## Explanation:
 Running this cli using the `shouldExecute` mode will return three variables `SHOULD_RUN_EXECUTE`, `SHOULD_WAIT_FOR_PAST_RUN`, and `PAST_RUN_ID`. All three variables are exportable using the cli output - note the command execution below. 
