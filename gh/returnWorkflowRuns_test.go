@@ -22,6 +22,7 @@ func TestReturnWorkflowRuns(t *testing.T){
     
     type args struct{
         branch       string
+        httpstatus   int
         owner        string
         repo         string        
         workflowFile string
@@ -38,6 +39,7 @@ func TestReturnWorkflowRuns(t *testing.T){
             name: "should succefully return 3 runs",
             args: args{
                 branch:          "ft/test-branch",
+                httpstatus:      200,
                 owner:           "testowner",
                 repo:            "testrepo",
                 workflowFile:    "testfile.yaml",
@@ -92,6 +94,27 @@ func TestReturnWorkflowRuns(t *testing.T){
 
             wantErr:  nil,
         },
+        {
+            name: "should fail with 404",
+            args: args{
+                branch:          "ft/test-branch",
+                httpstatus:      404,
+                owner:           "testowner",
+                repo:            "testrepo",
+                workflowFile:    "nonexistenttestfile.yaml",
+            },
+            endpoint: endpoint{
+                branch:          "ft/test-branch",
+                owner:           "testowner",
+                repo:            "testrepo",
+                workflowFile:    "nonexistenttestfile.yaml",
+                runs: `{"total_count":0,"workflow_runs":[]}`,
+
+            },
+            wantRuns: []*github.WorkflowRun{},
+
+            wantErr:  fmt.Errorf("Workflow not found"),
+        },
 
     }
 
@@ -110,10 +133,18 @@ func TestReturnWorkflowRuns(t *testing.T){
 
             mux.HandleFunc(apiurl, func(w http.ResponseWriter, r *http.Request) {
                 TestingMethod(t, r, "GET")
+                if tt.args.httpstatus == 200 {
+                    w.WriteHeader(http.StatusOK)
+                } else if tt.args.httpstatus == 404 {
+                    w.WriteHeader(http.StatusNotFound)
+                }
                 fmt.Fprint(w, tt.endpoint.runs)
             })
             
             gotRuns, gotErr := ReturnWorkflowRuns(tt.args.branch, ctx, client, tt.args.owner, tt.args.repo, tt.args.workflowFile, 20)
+
+            fmt.Println(gotRuns)
+            fmt.Println(gotErr)
 
             if tt.wantErr == nil {
                 
