@@ -101,7 +101,7 @@ func TestReturnWorkflowRuns(t *testing.T){
                 httpstatus:      404,
                 owner:           "testowner",
                 repo:            "testrepo",
-                workflowFile:    "nonexistenttestfile.yaml",
+                workflowFile:    "testfile.yaml",
             },
             endpoint: endpoint{
                 branch:          "ft/test-branch",
@@ -115,7 +115,48 @@ func TestReturnWorkflowRuns(t *testing.T){
 
             wantErr:  fmt.Errorf("Workflow not found"),
         },
+        {
+            name: "should fail with 410",
+            args: args{
+                branch:          "ft/test-branch",
+                httpstatus:      410,
+                owner:           "testowner",
+                repo:            "testrepo",
+                workflowFile:    "testfile.yaml",
+            },
+            endpoint: endpoint{
+                branch:          "ft/test-branch",
+                owner:           "testowner",
+                repo:            "testrepo",
+                workflowFile:    "testfile.yaml",
+                runs: `{"total_count":0,"workflow_runs":[]}`,
 
+            },
+            wantRuns: []*github.WorkflowRun{},
+
+            wantErr:  fmt.Errorf("API Method Gone"),
+        },       
+        {
+            name: "should fail with 504",
+            args: args{
+                branch:          "ft/test-branch",
+                httpstatus:      504,
+                owner:           "testowner",
+                repo:            "testrepo",
+                workflowFile:    "testfile.yaml",
+            },
+            endpoint: endpoint{
+                branch:          "ft/test-branch",
+                owner:           "testowner",
+                repo:            "testrepo",
+                workflowFile:    "testfile.yaml",
+                runs: `{"total_count":0,"workflow_runs":[]}`,
+
+            },
+            wantRuns: []*github.WorkflowRun{},
+
+            wantErr:  fmt.Errorf("Response status received was not 200"),
+        },
     }
 
     for _, tt := range tests {
@@ -132,29 +173,33 @@ func TestReturnWorkflowRuns(t *testing.T){
             apiurl := fmt.Sprintf("/repos/%s/%s/actions/workflows/%s/runs", tt.endpoint.owner, tt.endpoint.repo, tt.endpoint.workflowFile)
 
             mux.HandleFunc(apiurl, func(w http.ResponseWriter, r *http.Request) {
+
                 TestingMethod(t, r, "GET")
+
                 if tt.args.httpstatus == 200 {
                     w.WriteHeader(http.StatusOK)
                 } else if tt.args.httpstatus == 404 {
                     w.WriteHeader(http.StatusNotFound)
+                } else if tt.args.httpstatus == 410 {
+                    w.WriteHeader(http.StatusGone)
+                } else if tt.args.httpstatus == 504 {
+                    w.WriteHeader(http.StatusGatewayTimeout)
                 }
+
                 fmt.Fprint(w, tt.endpoint.runs)
             })
             
             gotRuns, gotErr := ReturnWorkflowRuns(tt.args.branch, ctx, client, tt.args.owner, tt.args.repo, tt.args.workflowFile, 20)
 
-            fmt.Println(gotRuns)
-            fmt.Println(gotErr)
-
             if tt.wantErr == nil {
                 
                 if gotErr != nil {
-                    t.Errorf("ReturnWorkflowRuns() returned error: %v expect %v", gotErr, tt.wantErr)
+                    t.Errorf("ReturnWorkflowRuns() returned error: '%v' expect '%v'", gotErr, tt.wantErr)
                 }
 
             } else if gotErr.Error() != tt.wantErr.Error() {
                 
-                t.Errorf("ReturnWorkflowRuns() returned error: %v expect %v", gotErr, tt.wantErr)
+                t.Errorf("ReturnWorkflowRuns() returned error: '%v' expect '%v'", gotErr, tt.wantErr)
             }
 
             if len(gotRuns) != len(tt.wantRuns) {
@@ -173,11 +218,11 @@ func TestReturnWorkflowRuns(t *testing.T){
                         }
 
                         if *run.Name != *tt.wantRuns[i].Name {
-                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Name received %s but expects %s", i, *run.Name, *tt.wantRuns[i].Name)
+                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Name received '%s' but expects '%s'", i, *run.Name, *tt.wantRuns[i].Name)
                         }
 
                         if *run.NodeID != *tt.wantRuns[i].NodeID {
-                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - NodeID received %s but expects %s", i, *run.NodeID, *tt.wantRuns[i].NodeID)
+                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - NodeID received '%s' but expects '%s'", i, *run.NodeID, *tt.wantRuns[i].NodeID)
                         }
 
                         if *run.RunNumber != *tt.wantRuns[i].RunNumber {
@@ -185,15 +230,15 @@ func TestReturnWorkflowRuns(t *testing.T){
                         }
 
                         if *run.Event != *tt.wantRuns[i].Event {
-                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Event received %s but expects %s", i, *run.Event, *tt.wantRuns[i].Event)
+                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Event received '%s' but expects '%s'", i, *run.Event, *tt.wantRuns[i].Event)
                         }
 
                         if *run.Status != *tt.wantRuns[i].Status {
-                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Status received %s but expects %s", i, *run.Status, *tt.wantRuns[i].Status)
+                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Status received '%s' but expects '%s'", i, *run.Status, *tt.wantRuns[i].Status)
                         }
 
                         if *run.Conclusion != *tt.wantRuns[i].Conclusion {
-                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Conclusion received %s but expects %s", i, *run.Conclusion, *tt.wantRuns[i].Conclusion)
+                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Conclusion received '%s' but expects '%s'", i, *run.Conclusion, *tt.wantRuns[i].Conclusion)
                         }
 
                         if *run.CreatedAt != *tt.wantRuns[i].CreatedAt {
@@ -201,7 +246,7 @@ func TestReturnWorkflowRuns(t *testing.T){
                         }
 
                         if *run.UpdatedAt != *tt.wantRuns[i].UpdatedAt {
-                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - UpdatedAt received %s but expects %s", i, *run.UpdatedAt, *tt.wantRuns[i].UpdatedAt)
+                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - UpdatedAt received '%s' but expects '%s'", i, *run.UpdatedAt, *tt.wantRuns[i].UpdatedAt)
                         }
 
                     }

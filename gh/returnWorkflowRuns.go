@@ -55,6 +55,18 @@ func ReturnWorkflowRuns(branchName string, ctx context.Context, client *github.C
         return nil, fmt.Errorf("API Method Gone")
     }
 
+    if res.StatusCode != 200 {
+
+        log.WithFields(log.Fields{
+            "Response Status":      res.StatusCode,
+            "repo":                 repo,
+            "owner":                owner,
+            "workflowFile":         workflowFile,
+            "workflowRunsToReturn": workflowRunsToReturn,
+        }).Warn("Request did not succeed: Response status received was not 200 ...")
+
+        return nil, fmt.Errorf("Response status received was not 200")
+    }
 
     if err != nil {
 
