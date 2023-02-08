@@ -95,7 +95,7 @@ func TestReturnWorkflowRuns(t *testing.T){
             wantErr:  nil,
         },
         {
-            name: "should fail with 404",
+            name: "should fail with code 404",
             args: args{
                 branch:          "ft/test-branch",
                 httpstatus:      404,
@@ -116,7 +116,7 @@ func TestReturnWorkflowRuns(t *testing.T){
             wantErr:  fmt.Errorf("Workflow not found"),
         },
         {
-            name: "should fail with 410",
+            name: "should fail with code 410",
             args: args{
                 branch:          "ft/test-branch",
                 httpstatus:      410,

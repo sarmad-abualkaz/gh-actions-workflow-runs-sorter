@@ -23,6 +23,7 @@ func TestReturnWorkflowRunStatustatus(t *testing.T){
     
     type args struct{
         branch       string
+        httpstatus   int
         owner        string
         repo         string        
         runId        int
@@ -40,6 +41,7 @@ func TestReturnWorkflowRunStatustatus(t *testing.T){
             name: "should succefully return completed run",
             args: args{
                 branch:          "ft/test-branch",
+                httpstatus:      200,
                 owner:           "testowner",
                 repo:            "testrepo",
                 runId:           1111111111,
@@ -73,6 +75,7 @@ func TestReturnWorkflowRunStatustatus(t *testing.T){
             name: "should succefully return in_progress run",
             args: args{
                 branch:          "ft/test-branch",
+                httpstatus:      200,
                 owner:           "testowner",
                 repo:            "testrepo",
                 runId:           1111111111,
@@ -102,7 +105,106 @@ func TestReturnWorkflowRunStatustatus(t *testing.T){
 
             wantErr:  nil,
         },
+        {
+            name: "should fail with code 404",
+            args: args{
+                branch:          "ft/test-branch",
+                httpstatus:      404,
+                owner:           "testowner",
+                repo:            "testrepo",
+                runId:           1111111111,
+            },
+            endpoint: endpoint{
+                branch:          "ft/test-branch",
+                owner:           "testowner",
+                repo:            "testrepo",
+                runId:           1111111111,
+                run: `{
+                        "id": 1111111111,
+                        "name": "Test Workflow",
+                        "node_id": "fakenode03",
+                        "run_number": 3,
+                        "event": "push",
+                        "status": "in_progress",
+                        "conclusion": "success",
+                        "created_at": "2022-12-12T22:34:57Z",
+                        "updated_at": "2022-12-12T22:47:06Z"
+                    }`,
 
+            },
+
+            wantStatus: "",
+
+            wantUpdateTime: &github.Timestamp{},
+
+            wantErr:  fmt.Errorf("Workflow run not found"),
+        },
+        {
+            name: "should fail with code 410",
+            args: args{
+                branch:          "ft/test-branch",
+                httpstatus:      410,
+                owner:           "testowner",
+                repo:            "testrepo",
+                runId:           1111111111,
+            },
+        endpoint: endpoint{
+            branch:          "ft/test-branch",
+            owner:           "testowner",
+            repo:            "testrepo",
+            runId:           1111111111,
+            run: `{
+                    "id": 1111111111,
+                    "name": "Test Workflow",
+                    "node_id": "fakenode03",
+                    "run_number": 3,
+                    "event": "push",
+                    "status": "in_progress",
+                    "conclusion": "success",
+                    "created_at": "2022-12-12T22:34:57Z",
+                    "updated_at": "2022-12-12T22:47:06Z"
+                }`,
+
+        },
+            wantStatus: "",
+
+            wantUpdateTime: &github.Timestamp{},
+
+            wantErr:  fmt.Errorf("API Method Gone"),
+        },
+        {
+            name: "should fail with 504",
+            args: args{
+                branch:          "ft/test-branch",
+                httpstatus:      504,
+                owner:           "testowner",
+                repo:            "testrepo",
+                runId:           1111111111,
+            },
+        endpoint: endpoint{
+            branch:          "ft/test-branch",
+            owner:           "testowner",
+            repo:            "testrepo",
+            runId:           1111111111,
+            run: `{
+                    "id": 1111111111,
+                    "name": "Test Workflow",
+                    "node_id": "fakenode03",
+                    "run_number": 3,
+                    "event": "push",
+                    "status": "in_progress",
+                    "conclusion": "success",
+                    "created_at": "2022-12-12T22:34:57Z",
+                    "updated_at": "2022-12-12T22:47:06Z"
+                }`,
+
+        },
+            wantStatus: "",
+
+            wantUpdateTime: &github.Timestamp{},
+
+            wantErr:  fmt.Errorf("Response status received was not 200"),
+        },
     }
 
     for _, tt := range tests {
@@ -119,7 +221,19 @@ func TestReturnWorkflowRunStatustatus(t *testing.T){
             apiurl := fmt.Sprintf("/repos/%s/%s/actions/runs/%d", tt.endpoint.owner, tt.endpoint.repo, tt.endpoint.runId)
 
             mux.HandleFunc(apiurl, func(w http.ResponseWriter, r *http.Request) {
+
                 TestingMethod(t, r, "GET")
+
+                if tt.args.httpstatus == 200 {
+                    w.WriteHeader(http.StatusOK)
+                } else if tt.args.httpstatus == 404 {
+                    w.WriteHeader(http.StatusNotFound)
+                } else if tt.args.httpstatus == 410 {
+                    w.WriteHeader(http.StatusGone)
+                } else if tt.args.httpstatus == 504 {
+                    w.WriteHeader(http.StatusGatewayTimeout)
+                }
+
                 fmt.Fprint(w, tt.endpoint.run)
             })
             
@@ -128,23 +242,23 @@ func TestReturnWorkflowRunStatustatus(t *testing.T){
             if tt.wantErr == nil {
                 
                 if gotErr != nil {
-                    t.Errorf("ReturnWorkflowRunStatus() returned error: %v expect %v", gotErr, tt.wantErr)
+                    t.Errorf("ReturnWorkflowRunStatus() returned error: '%v' expect '%v'", gotErr, tt.wantErr)
                 }
 
             } else if gotErr.Error() != tt.wantErr.Error() {
                 
-                t.Errorf("ReturnWorkflowRunStatus() returned error: %v expect %v", gotErr, tt.wantErr)
+                t.Errorf("ReturnWorkflowRunStatus() returned error: '%v' expect '%v'", gotErr, tt.wantErr)
             }
 
             if !reflect.DeepEqual(gotStatus, tt.wantStatus){
 
-                t.Errorf("ReturnWorkflowRunStatus() failed - expects %s but received %s", tt.wantStatus, gotStatus)
+                t.Errorf("ReturnWorkflowRunStatus() failed - expects '%s' but received '%s'", tt.wantStatus, gotStatus)
 
             }
 
             if !reflect.DeepEqual(gotUpdateTime, tt.wantUpdateTime){
 
-                t.Errorf("ReturnWorkflowRunStatus() failed - expects %v but received %v", tt.wantUpdateTime, gotUpdateTime)
+                t.Errorf("ReturnWorkflowRunStatus() failed - expects '%v' but received '%v'", tt.wantUpdateTime, gotUpdateTime)
 
             }
 
