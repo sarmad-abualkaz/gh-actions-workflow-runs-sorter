@@ -8,7 +8,7 @@ import (
     log "github.com/sirupsen/logrus"
 )
 
-func ShouldExecute(runs []*github.WorkflowRun, runNumber int)(string, string, string, error){
+func ShouldExecute(runs []*github.WorkflowRun, runNumber int, workflowRunsToReturn int)(string, string, string, error){
 
     /*
 
@@ -85,11 +85,11 @@ func ShouldExecute(runs []*github.WorkflowRun, runNumber int)(string, string, st
     case runs_length < 1:
         return shouldRunExecute, shouldWaitForPastRun, pastRunIdStr, fmt.Errorf("No previous runs were returned from Github Actions API")
 
-    case runs_length < 20:
+    case runs_length < workflowRunsToReturn:
         log.WithFields(log.Fields{
             "runNumber":               runNumber,
             "number of previous runs": len(runs),
-        }).Warn(fmt.Sprintf("Number of workflow runs recieved from API is less than 20."))
+        }).Warn(fmt.Sprintf("Number of workflow runs recieved from API is less than %d.", workflowRunsToReturn))
     }
 
     log.WithFields(log.Fields{

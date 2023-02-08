@@ -47,7 +47,7 @@ func main(){
         }
 
         // get whether 3 parameters - to be used in the nex mode:
-        shouldRunExecute, shouldWaitForPastRun, pastRunIdStr,  ShouldExecuteErr := util.ShouldExecute(runs, *runNumber)
+        shouldRunExecute, shouldWaitForPastRun, pastRunIdStr,  ShouldExecuteErr := util.ShouldExecute(runs, *runNumber, int(*workflowRunsToReturn))
 
        // panic - crash hard if ShouldExectue errored out:
        if ShouldExecuteErr != nil {

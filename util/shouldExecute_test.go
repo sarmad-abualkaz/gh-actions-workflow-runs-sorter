@@ -19,6 +19,7 @@ func TestShouldExecute(t *testing.T){
         wantShouldWaitForPastRun string
         wantPastRunId            string
         wantError                error
+        workflowRunsToReturn     int
     }{
         {
             name: "should not execute",
@@ -46,6 +47,7 @@ func TestShouldExecute(t *testing.T){
             wantShouldWaitForPastRun: "false",
             wantPastRunId: "3333333333",
             wantError: nil,
+            workflowRunsToReturn: 20,
         },        
         {
             name: "should execute and wait",
@@ -59,7 +61,8 @@ func TestShouldExecute(t *testing.T){
             wantShouldExecute: "true",
             wantShouldWaitForPastRun: "true",
             wantPastRunId: "3333333333",
-            wantError: nil,        
+            wantError: nil,
+            workflowRunsToReturn: 30,       
         },
         {
             name: "should return error - zero runs",
@@ -69,13 +72,14 @@ func TestShouldExecute(t *testing.T){
             wantShouldWaitForPastRun: "false",
             wantPastRunId: "0",
             wantError: fmt.Errorf("No previous runs were returned from Github Actions API"),
+            workflowRunsToReturn: 20,
         },
 
     }
 
     for _, tt := range tests {
 
-        gotShouldExecute, gotShouldWaitForPastRun, gotPastRunId, gotError := ShouldExecute(tt.runs, tt.runNumber)
+        gotShouldExecute, gotShouldWaitForPastRun, gotPastRunId, gotError := ShouldExecute(tt.runs, tt.runNumber, tt.workflowRunsToReturn)
 
         if tt.wantError == nil {
                 
