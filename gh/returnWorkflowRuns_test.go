@@ -3,11 +3,15 @@ package gh
 import (
     "context"
     "fmt"
+    "io/ioutil"
     "net/http"
     "reflect"
     "testing"
     "time"
+
     "github.com/google/go-github/v47/github"
+    log "github.com/sirupsen/logrus"
+
 )
 
 func TestReturnWorkflowRuns(t *testing.T){
@@ -164,6 +168,9 @@ func TestReturnWorkflowRuns(t *testing.T){
         // var apiurl string
         
         t.Run(tt.name, func(t *testing.T) {
+
+            // supress logrus
+            log.SetOutput(ioutil.Discard)
 
             client, mux, _, teardown := Setup()
             defer teardown()
