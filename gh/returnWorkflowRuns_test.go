@@ -176,14 +176,19 @@ func TestReturnWorkflowRuns(t *testing.T){
 
                 TestingMethod(t, r, "GET")
 
-                if tt.args.httpstatus == 200 {
-                    w.WriteHeader(http.StatusOK)
-                } else if tt.args.httpstatus == 404 {
-                    w.WriteHeader(http.StatusNotFound)
-                } else if tt.args.httpstatus == 410 {
-                    w.WriteHeader(http.StatusGone)
-                } else if tt.args.httpstatus == 504 {
-                    w.WriteHeader(http.StatusGatewayTimeout)
+                switch tt.args.httpstatus {
+
+                    case 200:
+                        w.WriteHeader(http.StatusOK)
+
+                    case 404:
+                        w.WriteHeader(http.StatusNotFound)
+
+                    case 410:
+                        w.WriteHeader(http.StatusGone)
+
+                    default:
+                        w.WriteHeader(http.StatusGatewayTimeout)
                 }
 
                 fmt.Fprint(w, tt.endpoint.runs)
