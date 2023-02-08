@@ -178,17 +178,17 @@ func TestReturnWorkflowRuns(t *testing.T){
 
                 switch tt.args.httpstatus {
 
-                    case 200:
-                        w.WriteHeader(http.StatusOK)
+                case 200:
+                    w.WriteHeader(http.StatusOK)
 
-                    case 404:
-                        w.WriteHeader(http.StatusNotFound)
+                case 404:
+                    w.WriteHeader(http.StatusNotFound)
 
-                    case 410:
-                        w.WriteHeader(http.StatusGone)
+                case 410:
+                    w.WriteHeader(http.StatusGone)
 
-                    default:
-                        w.WriteHeader(http.StatusGatewayTimeout)
+                default:
+                    w.WriteHeader(http.StatusGatewayTimeout)
                 }
 
                 fmt.Fprint(w, tt.endpoint.runs)

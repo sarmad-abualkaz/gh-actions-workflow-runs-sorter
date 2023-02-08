@@ -1,6 +1,7 @@
 package util
 
 import (
+    "fmt"
     "reflect"
     "testing"
     "time"
@@ -60,6 +61,15 @@ func TestShouldExecute(t *testing.T){
             wantPastRunId: "3333333333",
             wantError: nil,        
         },
+        {
+            name: "should return error - zero runs",
+            runs: []*github.WorkflowRun{},
+            runNumber: 31,
+            wantShouldExecute: "false",
+            wantShouldWaitForPastRun: "false",
+            wantPastRunId: "0",
+            wantError: fmt.Errorf("No previous runs were returned from Github Actions API"),
+        },
 
     }
 
@@ -70,29 +80,29 @@ func TestShouldExecute(t *testing.T){
         if tt.wantError == nil {
                 
             if gotError != nil {
-                t.Errorf("ShouldExecute() returned error: %v expect %v", gotError, tt.wantError)
+                t.Errorf("ShouldExecute() returned error: '%v' expect '%v'", gotError, tt.wantError)
             }
 
         } else if gotError.Error() != tt.wantError.Error() {
             
-            t.Errorf("ShouldExecute() returned error: %v expect %v", gotError, tt.wantError)
+            t.Errorf("ShouldExecute() returned error: '%v' expect '%v'", gotError, tt.wantError)
         }
 
         if !reflect.DeepEqual(tt.wantShouldExecute, gotShouldExecute){
             
-            t.Errorf("ShouldExecute() failed - shouldExecute? expects %s but received %s", tt.wantShouldExecute, gotShouldExecute)
+            t.Errorf("ShouldExecute() failed - shouldExecute? expects '%s' but received '%s'", tt.wantShouldExecute, gotShouldExecute)
 
         }
 
         if !reflect.DeepEqual(tt.wantShouldWaitForPastRun, gotShouldWaitForPastRun){
             
-            t.Errorf("ShouldExecute() failed - shouldWaitForPastRun? expects %s but received %s", tt.wantShouldWaitForPastRun, gotShouldWaitForPastRun)
+            t.Errorf("ShouldExecute() failed - shouldWaitForPastRun? expects '%s' but received '%s'", tt.wantShouldWaitForPastRun, gotShouldWaitForPastRun)
 
         }
 
         if !reflect.DeepEqual(tt.wantPastRunId, gotPastRunId){
             
-            t.Errorf("ShouldExecute() failed - pastRunId expects %s but received %s", tt.wantPastRunId, gotPastRunId)
+            t.Errorf("ShouldExecute() failed - pastRunId expects '%s' but received '%s'", tt.wantPastRunId, gotPastRunId)
 
         }
     }

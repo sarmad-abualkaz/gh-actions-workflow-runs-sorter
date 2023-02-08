@@ -49,6 +49,7 @@ func main(){
         // get whether 3 parameters - to be used in the nex mode:
         shouldRunExecute, shouldWaitForPastRun, pastRunIdStr,  ShouldExecuteErr := util.ShouldExecute(runs, *runNumber)
 
+       // panic - crash hard if ShouldExectue errored out:
        if ShouldExecuteErr != nil {
             log.WithFields(log.Fields{
                 "repo":         *repo,
@@ -56,6 +57,9 @@ func main(){
                 "workflowFile": *workflowFile,
                 "workflowRunsToReturn": *workflowRunsToReturn,
             }).Error(ShouldExecuteErr.Error())
+
+            panic(fmt.Sprintf("Failed to complete 'shouldExecute' mode with error %s", ShouldExecuteErr.Error()))
+
         }
 
         // export variables retrieved from ShouldExecute() to the environment:

@@ -71,6 +71,27 @@ func ShouldExecute(runs []*github.WorkflowRun, runNumber int)(string, string, st
     // convert to string from pastRunId
     pastRunIdStr := strconv.Itoa(int(pastRunId))
 
+    // -- Post-Logic check --
+    // Check for the size of the list of runs - expected to be minimum of 20
+    // Q: when can it not be 20?
+    // A: if this cli is used on a new repository that had fewer workflow run executions than 20
+    //    or
+    //    if gh-action api has failed to return any runs for the workflow
+
+    // log warning if less than 20 runs were returned:
+    switch runs_length := len(runs); {
+
+    // return error if less than 1 (or zero) runs were retunred:
+    case runs_length < 1:
+        return shouldRunExecute, shouldWaitForPastRun, pastRunIdStr, fmt.Errorf("No previous runs were returned from Github Actions API")
+
+    case runs_length < 20:
+        log.WithFields(log.Fields{
+            "runNumber":               runNumber,
+            "number of previous runs": len(runs),
+        }).Warn(fmt.Sprintf("Number of workflow runs recieved from API is less than 20."))
+    }
+
     log.WithFields(log.Fields{
         "runNumber": runNumber,
     }).Info(fmt.Sprintf("updating data with SHOULD_RUN_EXECUTE = %s; SHOULD_WAIT_FOR_PAST_RUN = %s; PAST_RUN_ID = %s\n", shouldRunExecute, shouldWaitForPastRun, pastRunIdStr))
