@@ -1,7 +1,7 @@
 package util
 
 import (
-	"reflect"
+    "reflect"
     "testing"
 )
 
@@ -32,13 +32,17 @@ func TestShouldComplete(t *testing.T){
 
     for _, tt := range tests {
 
-        gotShouldComplete := ShouldComplete(tt.previousRunStatus)
+        t.Run(tt.name, func(t *testing.T) {
 
-        if !reflect.DeepEqual(gotShouldComplete, tt.wantShouldComplete){
-            
-            t.Errorf("ShouldComplete() failed - ID expects %t but received %t", tt.wantShouldComplete, gotShouldComplete)
+            gotShouldComplete := ShouldComplete(tt.previousRunStatus)
 
-        }
+            if !reflect.DeepEqual(gotShouldComplete, tt.wantShouldComplete){
+
+                t.Errorf("ShouldComplete() failed - ID expects %t but received %t", tt.wantShouldComplete, gotShouldComplete)
+
+            }
+
+        })
     }
 
 }

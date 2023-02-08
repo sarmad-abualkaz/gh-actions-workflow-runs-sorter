@@ -3,11 +3,15 @@ package gh
 import (
     "context"
     "fmt"
+    "io/ioutil"
     "net/http"
     "reflect"
     "testing"
     "time"
+
     "github.com/google/go-github/v47/github"
+    log "github.com/sirupsen/logrus"
+
 )
 
 func TestReturnWorkflowRuns(t *testing.T){
@@ -22,6 +26,7 @@ func TestReturnWorkflowRuns(t *testing.T){
     
     type args struct{
         branch       string
+        httpstatus   int
         owner        string
         repo         string        
         workflowFile string
@@ -38,6 +43,7 @@ func TestReturnWorkflowRuns(t *testing.T){
             name: "should succefully return 3 runs",
             args: args{
                 branch:          "ft/test-branch",
+                httpstatus:      200,
                 owner:           "testowner",
                 repo:            "testrepo",
                 workflowFile:    "testfile.yaml",
@@ -92,7 +98,69 @@ func TestReturnWorkflowRuns(t *testing.T){
 
             wantErr:  nil,
         },
+        {
+            name: "should fail with code 404",
+            args: args{
+                branch:          "ft/test-branch",
+                httpstatus:      404,
+                owner:           "testowner",
+                repo:            "testrepo",
+                workflowFile:    "testfile.yaml",
+            },
+            endpoint: endpoint{
+                branch:          "ft/test-branch",
+                owner:           "testowner",
+                repo:            "testrepo",
+                workflowFile:    "nonexistenttestfile.yaml",
+                runs: `{"total_count":0,"workflow_runs":[]}`,
 
+            },
+            wantRuns: []*github.WorkflowRun{},
+
+            wantErr:  fmt.Errorf("Workflow not found"),
+        },
+        {
+            name: "should fail with code 410",
+            args: args{
+                branch:          "ft/test-branch",
+                httpstatus:      410,
+                owner:           "testowner",
+                repo:            "testrepo",
+                workflowFile:    "testfile.yaml",
+            },
+            endpoint: endpoint{
+                branch:          "ft/test-branch",
+                owner:           "testowner",
+                repo:            "testrepo",
+                workflowFile:    "testfile.yaml",
+                runs: `{"total_count":0,"workflow_runs":[]}`,
+
+            },
+            wantRuns: []*github.WorkflowRun{},
+
+            wantErr:  fmt.Errorf("API Method Gone"),
+        },       
+        {
+            name: "should fail with 504",
+            args: args{
+                branch:          "ft/test-branch",
+                httpstatus:      504,
+                owner:           "testowner",
+                repo:            "testrepo",
+                workflowFile:    "testfile.yaml",
+            },
+            endpoint: endpoint{
+                branch:          "ft/test-branch",
+                owner:           "testowner",
+                repo:            "testrepo",
+                workflowFile:    "testfile.yaml",
+                runs: `{"total_count":0,"workflow_runs":[]}`,
+
+            },
+            wantRuns: []*github.WorkflowRun{},
+
+            wantErr:  fmt.Errorf("Response status received was not 200"),
+        },
     }
 
     for _, tt := range tests {
@@ -100,6 +168,9 @@ func TestReturnWorkflowRuns(t *testing.T){
         // var apiurl string
         
         t.Run(tt.name, func(t *testing.T) {
+
+            // supress logrus
+            log.SetOutput(ioutil.Discard)
 
             client, mux, _, teardown := Setup()
             defer teardown()
@@ -109,7 +180,24 @@ func TestReturnWorkflowRuns(t *testing.T){
             apiurl := fmt.Sprintf("/repos/%s/%s/actions/workflows/%s/runs", tt.endpoint.owner, tt.endpoint.repo, tt.endpoint.workflowFile)
 
             mux.HandleFunc(apiurl, func(w http.ResponseWriter, r *http.Request) {
+
                 TestingMethod(t, r, "GET")
+
+                switch tt.args.httpstatus {
+
+                case 200:
+                    w.WriteHeader(http.StatusOK)
+
+                case 404:
+                    w.WriteHeader(http.StatusNotFound)
+
+                case 410:
+                    w.WriteHeader(http.StatusGone)
+
+                default:
+                    w.WriteHeader(http.StatusGatewayTimeout)
+                }
+
                 fmt.Fprint(w, tt.endpoint.runs)
             })
             
@@ -118,12 +206,12 @@ func TestReturnWorkflowRuns(t *testing.T){
             if tt.wantErr == nil {
                 
                 if gotErr != nil {
-                    t.Errorf("ReturnWorkflowRuns() returned error: %v expect %v", gotErr, tt.wantErr)
+                    t.Errorf("ReturnWorkflowRuns() returned error: '%v' expect '%v'", gotErr, tt.wantErr)
                 }
 
             } else if gotErr.Error() != tt.wantErr.Error() {
                 
-                t.Errorf("ReturnWorkflowRuns() returned error: %v expect %v", gotErr, tt.wantErr)
+                t.Errorf("ReturnWorkflowRuns() returned error: '%v' expect '%v'", gotErr, tt.wantErr)
             }
 
             if len(gotRuns) != len(tt.wantRuns) {
@@ -142,11 +230,11 @@ func TestReturnWorkflowRuns(t *testing.T){
                         }
 
                         if *run.Name != *tt.wantRuns[i].Name {
-                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Name received %s but expects %s", i, *run.Name, *tt.wantRuns[i].Name)
+                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Name received '%s' but expects '%s'", i, *run.Name, *tt.wantRuns[i].Name)
                         }
 
                         if *run.NodeID != *tt.wantRuns[i].NodeID {
-                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - NodeID received %s but expects %s", i, *run.NodeID, *tt.wantRuns[i].NodeID)
+                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - NodeID received '%s' but expects '%s'", i, *run.NodeID, *tt.wantRuns[i].NodeID)
                         }
 
                         if *run.RunNumber != *tt.wantRuns[i].RunNumber {
@@ -154,15 +242,15 @@ func TestReturnWorkflowRuns(t *testing.T){
                         }
 
                         if *run.Event != *tt.wantRuns[i].Event {
-                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Event received %s but expects %s", i, *run.Event, *tt.wantRuns[i].Event)
+                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Event received '%s' but expects '%s'", i, *run.Event, *tt.wantRuns[i].Event)
                         }
 
                         if *run.Status != *tt.wantRuns[i].Status {
-                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Status received %s but expects %s", i, *run.Status, *tt.wantRuns[i].Status)
+                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Status received '%s' but expects '%s'", i, *run.Status, *tt.wantRuns[i].Status)
                         }
 
                         if *run.Conclusion != *tt.wantRuns[i].Conclusion {
-                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Conclusion received %s but expects %s", i, *run.Conclusion, *tt.wantRuns[i].Conclusion)
+                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - Conclusion received '%s' but expects '%s'", i, *run.Conclusion, *tt.wantRuns[i].Conclusion)
                         }
 
                         if *run.CreatedAt != *tt.wantRuns[i].CreatedAt {
@@ -170,7 +258,7 @@ func TestReturnWorkflowRuns(t *testing.T){
                         }
 
                         if *run.UpdatedAt != *tt.wantRuns[i].UpdatedAt {
-                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - UpdatedAt received %s but expects %s", i, *run.UpdatedAt, *tt.wantRuns[i].UpdatedAt)
+                            t.Errorf("ReturnWorkflowRuns() failed to retrieve same run on element %d - UpdatedAt received '%s' but expects '%s'", i, *run.UpdatedAt, *tt.wantRuns[i].UpdatedAt)
                         }
 
                     }

@@ -4,9 +4,9 @@ import (
     "context"
     "fmt"
     "time"
-	
+
     "github.com/google/go-github/v47/github"
-	
+
     log "github.com/sirupsen/logrus"
 )
 
@@ -39,10 +39,21 @@ func ReturnWorkflowRunStatus(ctx context.Context, client *github.Client, owner s
             "owner":        owner,
             "workflowRunId": workflowRunId,
         }).Warn("received 410 code: API Method Gone...")
-		
+
         return "", &github.Timestamp{time.Time{}}, fmt.Errorf("API Method Gone")
     }
 
+    if res.StatusCode != 200 {
+
+        log.WithFields(log.Fields{
+            "Response Status":      res.StatusCode,
+            "repo":         repo,
+            "owner":        owner,
+            "workflowRunId": workflowRunId,
+        }).Warn("Request did not succeed: Response status received was not 200 ...")
+
+        return "", &github.Timestamp{time.Time{}}, fmt.Errorf("Response status received was not 200")
+    }
 
     if err != nil {
 
